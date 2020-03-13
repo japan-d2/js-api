@@ -2,6 +2,8 @@
 import { validate } from 'jsonschema'
 import { Options, Connector, CallParameters, EndpointSchema } from './interfaces'
 
+export * from './interfaces'
+
 type APICallable <O> = <T, U>(
   endpoint: EndpointSchema<T, U>,
   parameters: CallParameters<T, O>,
