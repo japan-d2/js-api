@@ -28,11 +28,20 @@ export interface ResponseParameter {
   headers: Record<string, string>;
 }
 
+export type CastOptions = Partial<{
+  preprocessors: Partial<{
+    validation: Partial<{
+      request: (input: { query: {}; headers: {}; body: {} }) => any;
+      response: (input: { headers: {}; body: {} }) => any;
+    }>;
+  }>;
+}>
+
 export type CallOptions = Partial<{
   validateRequest: JsonSchemaValidateOptions;
   validateResponse: JsonSchemaValidateOptions;
 }>
-export type Options = Partial<RequestParameter> & CallOptions
+export type Options = Partial<RequestParameter> & CallOptions & CastOptions
 
 type MaskRequired <T, O extends keyof T> = Omit<T, O> & Partial<Pick<T, O>>
 type MaskRequiredParameter <T, U, K extends string> = (

@@ -1,6 +1,6 @@
 {
   "name": "@japan-d2/api",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "API client implementation based on @japan-d2/schema-api-endpoint",
   "main": "lib/index.js",
   "type": "lib/index.d.ts",
@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@japan-d2/schema": "0.0.11",
-    "@japan-d2/schema-api-endpoint": "0.0.4",
+    "@japan-d2/schema-api-endpoint": "^0.0.7",
     "json-schema": "^0.2.5",
     "jsonschema": "^1.2.5"
   },
