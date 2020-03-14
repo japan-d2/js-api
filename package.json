@@ -1,6 +1,6 @@
 {
   "name": "@japan-d2/api",
-  "version": "0.0.2",
+  "version": "0.1.2",
   "description": "API client implementation based on @japan-d2/schema-api-endpoint",
   "main": "lib/index.js",
   "type": "lib/index.d.ts",
