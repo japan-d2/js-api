@@ -20,7 +20,7 @@ interface APICallable <O, E extends EndpointMap = {}> {
 
   <K extends keyof E, S extends EndpointSchema<{}, {}> = E[K]>(
     endpoint: K,
-  ): EndpointCallable<ReturnType<S['request']['getType']>, ReturnType<S['response']['getType']>, O>;
+  ): EndpointCallable<Pure<S['request']>, Pure<S['response']>, O>;
 
   <T, U>(
     endpoint: EndpointSchema<T, U>,
@@ -30,9 +30,9 @@ interface APICallable <O, E extends EndpointMap = {}> {
 
   <K extends keyof E, S extends EndpointSchema<{}, {}> = E[K]>(
     endpoint: K,
-    parameters: CallParameters<ReturnType<S['request']['getType']>, O>,
+    parameters: CallParameters<Pure<S['request']>, O>,
     callOptions?: CallOptions
-  ): Promise<ReturnType<S['response']['getType']>>;
+  ): Promise<Pure<S['response']>>;
 }
 
 export function apiFactory <O extends Options, E extends EndpointMap> (defaultOptions: O, endpoints: E, connector: Connector): APICallable<O, E> {
