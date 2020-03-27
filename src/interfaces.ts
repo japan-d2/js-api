@@ -1,12 +1,14 @@
 import { EndpointRequest, EndpointSchema as EndpointSchemaRaw } from '@japan-d2/schema-api-endpoint'
 import { Options as JsonSchemaValidateOptions } from 'jsonschema'
+import { Dirty, Pure } from '@japan-d2/schema'
+import { SchemaDefinition } from '@japan-d2/schema/lib/interfaces'
 
 export interface EndpointSchema <T, U> extends EndpointSchemaRaw<T, U> {
   url: string;
   method: 'get' | 'post' | 'put' | 'patch' | 'delete';
 }
 
-type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -69,3 +71,35 @@ export type CallParameters <T extends EndpointRequestUnknown, O extends Options>
 )
 
 export type Connector = (parameters: RequestParameter) => Promise<ResponseParameter>
+
+export type EndpointMap = Record<string, EndpointSchema<{}, {}>>
+
+export interface EndpointCallable <T, U, O> {
+  validate (parameters: Dirty<SchemaDefinition<T>>): parameters is Pure<SchemaDefinition<T>>;
+  assertValid (parameters: Dirty<SchemaDefinition<T>>): asserts parameters is Pure<SchemaDefinition<T>>;
+  call (parameters: CallParameters<T, O>, callOptions?: CallOptions): Promise<U>;
+  defaultRequestParameters (): Dirty<SchemaDefinition<T>>;
+  defaultRequestParameters (strict: true): Pure<SchemaDefinition<T>>;
+}
+
+export interface APICallable <O, E extends EndpointMap = {}> {
+  <T, U>(
+    endpoint: EndpointSchema<T, U>,
+  ): EndpointCallable<T, U, O>;
+
+  <K extends keyof E, S extends EndpointSchema<{}, {}> = E[K]>(
+    endpoint: K,
+  ): EndpointCallable<Pure<S['request']>, Pure<S['response']>, O>;
+
+  <T, U>(
+    endpoint: EndpointSchema<T, U>,
+    parameters: CallParameters<T, O>,
+    callOptions?: CallOptions
+  ): Promise<U>;
+
+  <K extends keyof E, S extends EndpointSchema<{}, {}> = E[K]>(
+    endpoint: K,
+    parameters: CallParameters<Pure<S['request']>, O>,
+    callOptions?: CallOptions
+  ): Promise<Pure<S['response']>>;
+}

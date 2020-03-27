@@ -925,3 +925,57 @@ describe('validation', () => {
     expect(() => api(endpoint).assertValid(valid)).toThrow()
   })
 })
+
+describe('stub', () => {
+  const endpoint = {
+    ...endpointSchema({
+      request: {
+        query: d => d.string('message')
+          .number('id', {
+            minimum: 1
+          })
+          .string('name', {
+            default: 'default name'
+          })
+          .boolean('enabled')
+          .const('string', 'const test')
+          .array('coordinate', 'number', {}, {
+            minItems: 2
+          })
+          .null('null')
+          .enum('enum', 'number', [2, 4, 6, 8])
+      },
+      response: {
+        body: d => d.string('message')
+      }
+    }),
+    url: 'https://httpbin.org',
+    method: 'get'
+  } as const
+
+  const api = apiFactory({}, {}, async () => ({
+    statusCode: 200,
+    body: {
+      message: 'hello!'
+    },
+    headers: {
+      'content-type': 'application/json'
+    }
+  }))
+
+  it('generates stub', () => {
+    const stub = api(endpoint).defaultRequestParameters(true)
+    expect(stub).toStrictEqual({
+      query: {
+        enabled: false,
+        enum: 2,
+        id: 1,
+        coordinate: [0, 0],
+        message: '',
+        name: 'default name',
+        null: null,
+        string: 'const test'
+      }
+    })
+  })
+})

@@ -1,38 +1,63 @@
 import { validate, Options as ValidateOptions } from 'jsonschema'
-import { Options, Connector, CallParameters, EndpointSchema, CallOptions } from './interfaces'
-import { Dirty, Pure } from '@japan-d2/schema'
-import { SchemaDefinition } from '@japan-d2/schema/lib/interfaces'
+import { Options, Connector, CallParameters, EndpointSchema, CallOptions, EndpointMap, EndpointCallable, Json, APICallable } from './interfaces'
+import { JSONSchema7 } from 'json-schema'
 
 export * from './interfaces'
 
-type EndpointMap = Record<string, EndpointSchema<{}, {}>>
+export function buildDefaultValue (schema: JSONSchema7): Json | object {
+  if (schema.const) {
+    return schema.const
+  }
 
-interface EndpointCallable <T, U, O> {
-  validate (parameters: Dirty<SchemaDefinition<T>>): parameters is Pure<SchemaDefinition<T>>;
-  assertValid (parameters: Dirty<SchemaDefinition<T>>): asserts parameters is Pure<SchemaDefinition<T>>;
-  call (parameters: CallParameters<T, O>, callOptions?: CallOptions): Promise<U>;
-}
+  if (schema.default) {
+    return schema.default
+  }
 
-interface APICallable <O, E extends EndpointMap = {}> {
-  <T, U>(
-    endpoint: EndpointSchema<T, U>,
-  ): EndpointCallable<T, U, O>;
+  if (schema.enum) {
+    return schema.enum[0]
+  }
 
-  <K extends keyof E, S extends EndpointSchema<{}, {}> = E[K]>(
-    endpoint: K,
-  ): EndpointCallable<Pure<S['request']>, Pure<S['response']>, O>;
+  switch (schema.type) {
+    case 'string': return ''
+    case 'number': return schema.minimum ?? 0
+    case 'integer': return schema.minimum ?? 0
+    case 'boolean': return false
+    case 'array': return schema.minItems
+      ? (new Array(schema.minItems).fill(buildDefaultValue(
+        typeof schema.items === 'object'
+          ? 'length' in schema.items
+            ? typeof schema.items[0] === 'object'
+              ? schema.items[0]
+              : { type: 'null' }
+            : schema.items
+          : { type: 'null' }
+      )))
+      : []
+    case 'null': return null
+  }
 
-  <T, U>(
-    endpoint: EndpointSchema<T, U>,
-    parameters: CallParameters<T, O>,
-    callOptions?: CallOptions
-  ): Promise<U>;
+  if (schema.type === 'object') {
+    const { properties } = schema
+    if (!properties) {
+      return null
+    }
 
-  <K extends keyof E, S extends EndpointSchema<{}, {}> = E[K]>(
-    endpoint: K,
-    parameters: CallParameters<Pure<S['request']>, O>,
-    callOptions?: CallOptions
-  ): Promise<Pure<S['response']>>;
+    const obj: { [key: string]: Json | object } = {}
+    for (const key of Object.keys(properties)) {
+      if (typeof properties !== 'object') {
+        continue
+      }
+      const value = properties[key]
+      if (typeof value !== 'object') {
+        continue
+      }
+      obj[key] = buildDefaultValue(value)
+    }
+
+    return obj
+  }
+
+  return null
 }
 
 export function apiFactory <O extends Options, E extends EndpointMap> (defaultOptions: O, endpoints: E, connector: Connector): APICallable<O, E> {
@@ -92,7 +117,7 @@ export function apiFactory <O extends Options, E extends EndpointMap> (defaultOp
   }
 
   function cast (endpoint: string | EndpointSchema<{}, {}>): EndpointCallable<{}, {}, O> {
-    return {
+    const methods = {
       validate: (parameters: any, options?: Omit<ValidateOptions, 'throwError'>): parameters is {} => {
         const schema = endpointObject(endpoint).request.toJSONSchema()
         return validate(parameters, schema, {
@@ -109,8 +134,13 @@ export function apiFactory <O extends Options, E extends EndpointMap> (defaultOp
       },
       call: (parameters: {}, callOptions = {}): Promise<{}> => {
         return call(endpointObject(endpoint), parameters, callOptions)
+      },
+      defaultRequestParameters: () => {
+        const schema = endpointObject(endpoint).request.toJSONSchema()
+        return buildDefaultValue(schema) as any
       }
     }
+    return methods
   }
 
   return function api (
