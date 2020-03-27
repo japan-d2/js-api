@@ -78,8 +78,7 @@ export interface EndpointCallable <T, U, O> {
   validate (parameters: Dirty<SchemaDefinition<T>>): parameters is Pure<SchemaDefinition<T>>;
   assertValid (parameters: Dirty<SchemaDefinition<T>>): asserts parameters is Pure<SchemaDefinition<T>>;
   call (parameters: CallParameters<T, O>, callOptions?: CallOptions): Promise<U>;
-  defaultRequestParameters (): Dirty<SchemaDefinition<T>>;
-  defaultRequestParameters (strict: true): Pure<SchemaDefinition<T>>;
+  emptyRequestParameters (): Pure<SchemaDefinition<T>>;
 }
 
 export interface APICallable <O, E extends EndpointMap = {}> {

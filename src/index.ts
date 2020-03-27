@@ -4,13 +4,13 @@ import { JSONSchema7 } from 'json-schema'
 
 export * from './interfaces'
 
-export function buildDefaultValue (schema: JSONSchema7): Json | object {
-  if (schema.const) {
-    return schema.const
+export function buildInitialValue (schema: JSONSchema7, useDefault = false): Json | object {
+  if (useDefault && schema.default) {
+    return schema.default
   }
 
-  if (schema.default) {
-    return schema.default
+  if (schema.const) {
+    return schema.const
   }
 
   if (schema.enum) {
@@ -19,20 +19,10 @@ export function buildDefaultValue (schema: JSONSchema7): Json | object {
 
   switch (schema.type) {
     case 'string': return ''
-    case 'number': return schema.minimum ?? 0
-    case 'integer': return schema.minimum ?? 0
+    case 'number': return 0
+    case 'integer': return 0
     case 'boolean': return false
-    case 'array': return schema.minItems
-      ? (new Array(schema.minItems).fill(buildDefaultValue(
-        typeof schema.items === 'object'
-          ? 'length' in schema.items
-            ? typeof schema.items[0] === 'object'
-              ? schema.items[0]
-              : { type: 'null' }
-            : schema.items
-          : { type: 'null' }
-      )))
-      : []
+    case 'array': return []
     case 'null': return null
   }
 
@@ -51,7 +41,7 @@ export function buildDefaultValue (schema: JSONSchema7): Json | object {
       if (typeof value !== 'object') {
         continue
       }
-      obj[key] = buildDefaultValue(value)
+      obj[key] = buildInitialValue(value, useDefault)
     }
 
     return obj
@@ -135,9 +125,9 @@ export function apiFactory <O extends Options, E extends EndpointMap> (defaultOp
       call: (parameters: {}, callOptions = {}): Promise<{}> => {
         return call(endpointObject(endpoint), parameters, callOptions)
       },
-      defaultRequestParameters: () => {
+      emptyRequestParameters: () => {
         const schema = endpointObject(endpoint).request.toJSONSchema()
-        return buildDefaultValue(schema) as any
+        return buildInitialValue(schema) as any
       }
     }
     return methods

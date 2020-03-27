@@ -964,15 +964,15 @@ describe('stub', () => {
   }))
 
   it('generates stub', () => {
-    const stub = api(endpoint).defaultRequestParameters(true)
+    const stub = api(endpoint).emptyRequestParameters()
     expect(stub).toStrictEqual({
       query: {
         enabled: false,
         enum: 2,
-        id: 1,
-        coordinate: [0, 0],
+        id: 0,
+        coordinate: [],
         message: '',
-        name: 'default name',
+        name: '',
         null: null,
         string: 'const test'
       }
