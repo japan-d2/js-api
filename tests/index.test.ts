@@ -92,7 +92,9 @@ describe('apiFactory', () => {
     })
 
     it('should callable successfully', async () => {
-      const api = apiFactory({}, {}, async () => {
+      const handleSchema = jest.fn()
+      const api = apiFactory({}, {}, async ({ schema }) => {
+        handleSchema(schema)
         return {
           statusCode: 200,
           body: {
@@ -128,6 +130,7 @@ describe('apiFactory', () => {
         statusCode: 200
       })
       expect(consoleOutput).toEqual([])
+      expect(handleSchema).toBeCalledWith(endpoint)
     })
 
     describe('request validation', () => {

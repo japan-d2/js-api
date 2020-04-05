@@ -22,6 +22,7 @@ export interface RequestParameter {
   query: Record<string, string | string[]>;
   body: Record<string, Json>;
   headers: Record<string, string>;
+  schema: EndpointSchema<unknown, unknown>;
 }
 
 export interface ResponseParameter {

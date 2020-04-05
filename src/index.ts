@@ -50,7 +50,11 @@ export function buildInitialValue (schema: JSONSchema7, useDefault = false): Jso
   return null
 }
 
-export function apiFactory <O extends Options, E extends EndpointMap> (defaultOptions: O, endpoints: E, connector: Connector): APICallable<O, E> {
+export function apiFactory <O extends Options, E extends EndpointMap> (
+  defaultOptions: O,
+  endpoints: E,
+  connector: Connector
+): APICallable<O, E> {
   async function call <T, U> (
     endpoint: EndpointSchema<T, U>,
     parameters: CallParameters<T, O>,
@@ -84,7 +88,8 @@ export function apiFactory <O extends Options, E extends EndpointMap> (defaultOp
       method: endpoint.method,
       query,
       headers,
-      body
+      body,
+      schema: endpoint
     })
     if (options.validateResponse) {
       const preprocessor = options.preprocessors?.validation?.response ?? ((parameters) => parameters)
