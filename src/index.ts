@@ -130,6 +130,9 @@ export function apiFactory <O extends Options, E extends EndpointMap> (
       call: (parameters: {}, callOptions = {}): Promise<{}> => {
         return call(endpointObject(endpoint), parameters, callOptions)
       },
+      request: (parameters: {}, callOptions = {}): Promise<{}> => {
+        return call(endpointObject(endpoint), parameters, callOptions)
+      },
       emptyRequestParameters: () => {
         const schema = endpointObject(endpoint).request.toJSONSchema()
         return buildInitialValue(schema) as any
