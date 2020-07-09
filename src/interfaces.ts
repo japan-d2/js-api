@@ -79,6 +79,7 @@ export interface EndpointCallable <T, U, O> {
   validate (parameters: Dirty<SchemaDefinition<T>>): parameters is Pure<SchemaDefinition<T>>;
   assertValid (parameters: Dirty<SchemaDefinition<T>>): asserts parameters is Pure<SchemaDefinition<T>>;
   call (parameters: CallParameters<T, O>, callOptions?: CallOptions): Promise<U>;
+  request (parameters: CallParameters<T, O>, callOptions?: CallOptions): Promise<U>;
   emptyRequestParameters (): Pure<SchemaDefinition<T>>;
 }
 
