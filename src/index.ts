@@ -1,10 +1,8 @@
 import { validate, Options as ValidateOptions } from 'jsonschema'
-import { Options, Connector, CallParameters, EndpointSchema, CallOptions, EndpointMap, EndpointCallable, Json, APICallable } from './interfaces'
+import { Options, Connector, CallParameters, EndpointSchema, CallOptions, EndpointMap, EndpointCallable, Json, APICallable, EndpointSchemaUnknown } from './interfaces'
 import { JSONSchema7 } from 'json-schema'
 
 export * from './interfaces'
-
-type AnyObject = Record<string, unknown>
 
 export function buildInitialValue (schema: JSONSchema7, useDefault = false): Json | unknown {
   if (useDefault && schema.default) {
@@ -106,16 +104,16 @@ export function apiFactory <O extends Options, E extends EndpointMap> (
     return response as unknown as U
   }
 
-  function endpointObject (endpoint: any): EndpointSchema<AnyObject, AnyObject> {
+  function endpointObject (endpoint: any): EndpointSchemaUnknown {
     if (typeof endpoint === 'string') {
       return endpoints[endpoint]
     }
     return endpoint
   }
 
-  function cast (endpoint: string | EndpointSchema<AnyObject, AnyObject>): EndpointCallable<AnyObject, AnyObject, O> {
+  function cast (endpoint: string | EndpointSchemaUnknown): EndpointCallable<unknown, unknown, O> {
     const methods = {
-      validate: (parameters: any, options?: Omit<ValidateOptions, 'throwError'>): parameters is AnyObject => {
+      validate: (parameters: any, options?: Omit<ValidateOptions, 'throwError'>): parameters is any => {
         const schema = endpointObject(endpoint).request.toJSONSchema()
         return validate(parameters, schema, {
           ...options,
@@ -129,10 +127,10 @@ export function apiFactory <O extends Options, E extends EndpointMap> (
           throwError: true
         })
       },
-      call: (parameters: AnyObject, callOptions = {}): Promise<AnyObject> => {
+      call: (parameters: Record<string, unknown>, callOptions = {}): Promise<Record<string, unknown>> => {
         return call(endpointObject(endpoint), parameters, callOptions)
       },
-      request: (parameters: AnyObject, callOptions = {}): Promise<AnyObject> => {
+      request: (parameters: Record<string, unknown>, callOptions = {}): Promise<Record<string, unknown>> => {
         return call(endpointObject(endpoint), parameters, callOptions)
       },
       emptyRequestParameters: () => {
@@ -144,8 +142,8 @@ export function apiFactory <O extends Options, E extends EndpointMap> (
   }
 
   return function api (
-    endpoint: string | EndpointSchema<AnyObject, AnyObject>,
-    parameters?: CallParameters<AnyObject, AnyObject>,
+    endpoint: string | EndpointSchemaUnknown,
+    parameters?: CallParameters<Record<string, unknown>, Record<string, unknown>>,
     callOptions?: Options
   ): any {
     const callable = cast(endpoint)
