@@ -3,6 +3,8 @@ import { Options as JsonSchemaValidateOptions } from 'jsonschema'
 import { Dirty, Pure } from '@japan-d2/schema'
 import { SchemaDefinition } from '@japan-d2/schema/lib/interfaces'
 
+type AnyObject = Record<string, unknown>
+
 export interface EndpointSchema <T, U> extends EndpointSchemaRaw<T, U> {
   url: string;
   method: 'get' | 'post' | 'put' | 'patch' | 'delete';
@@ -34,8 +36,8 @@ export interface ResponseParameter {
 export type CastOptions = Partial<{
   preprocessors: Partial<{
     validation: Partial<{
-      request: (input: { query: {}; headers: {}; body: {} }) => any;
-      response: (input: { headers: {}; body: {} }) => any;
+      request: (input: { query: AnyObject; headers: AnyObject; body: AnyObject }) => any;
+      response: (input: { headers: AnyObject; body: AnyObject }) => any;
     }>;
   }>;
 }>
@@ -48,8 +50,8 @@ export type Options = Partial<RequestParameter> & CallOptions & CastOptions
 
 type MaskRequired <T, O extends keyof T> = Omit<T, O> & Partial<Pick<T, O>>
 type MaskRequiredParameter <T, U, K extends string> = (
-  T extends { [Key in K]: object }
-  ? U extends { [Key in K]: object }
+  T extends { [Key in K]: AnyObject }
+  ? U extends { [Key in K]: AnyObject }
     ? MaskRequired<T[K], Extract<keyof T[K], keyof U[K]>>
     : T[K]
   : unknown
@@ -65,7 +67,7 @@ export type CallParameters <T extends EndpointRequestUnknown, O extends Options>
   Omit<T, 'query' | 'headers'> & Filter<{
     query: MaskRequiredParameter<T, O, 'query'>;
     headers: MaskRequiredParameter<T, O, 'headers'>;
-  }, object> & {
+  }, AnyObject> & {
     query?: Record<string, string | string[]>;
     headers?: Record<string, string>;
   }
@@ -73,7 +75,7 @@ export type CallParameters <T extends EndpointRequestUnknown, O extends Options>
 
 export type Connector = (parameters: RequestParameter) => Promise<ResponseParameter>
 
-export type EndpointMap = Record<string, EndpointSchema<{}, {}>>
+export type EndpointMap = Record<string, EndpointSchema<AnyObject, AnyObject>>
 
 export interface EndpointCallable <T, U, O> {
   validate (parameters: Dirty<SchemaDefinition<T>>): parameters is Pure<SchemaDefinition<T>>;
@@ -83,12 +85,12 @@ export interface EndpointCallable <T, U, O> {
   emptyRequestParameters (): Pure<SchemaDefinition<T>>;
 }
 
-export interface APICallable <O, E extends EndpointMap = {}> {
+export interface APICallable <O, E extends EndpointMap = EndpointMap> {
   <T, U>(
     endpoint: EndpointSchema<T, U>,
   ): EndpointCallable<T, U, O>;
 
-  <K extends keyof E, S extends EndpointSchema<{}, {}> = E[K]>(
+  <K extends keyof E, S extends EndpointSchema<AnyObject, AnyObject> = E[K]>(
     endpoint: K,
   ): EndpointCallable<Pure<S['request']>, Pure<S['response']>, O>;
 
@@ -98,7 +100,7 @@ export interface APICallable <O, E extends EndpointMap = {}> {
     callOptions?: CallOptions
   ): Promise<U>;
 
-  <K extends keyof E, S extends EndpointSchema<{}, {}> = E[K]>(
+  <K extends keyof E, S extends EndpointSchema<AnyObject, AnyObject> = E[K]>(
     endpoint: K,
     parameters: CallParameters<Pure<S['request']>, O>,
     callOptions?: CallOptions
