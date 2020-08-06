@@ -982,3 +982,97 @@ describe('stub', () => {
     })
   })
 })
+
+describe('interceptor', () => {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  function createApi () {
+    return apiFactory({}, {
+      'test.should.mock': {
+        ...endpointSchema({
+          request: {
+            query: d => d.string('name')
+          },
+          response: {
+            body: d => d.boolean('ok')
+          }
+        }),
+        method: 'get',
+        url: ''
+      }
+    }, async () => {
+      return {
+        statusCode: 200,
+        body: {
+          ok: false
+        },
+        headers: {
+          'content-type': 'application/json'
+        }
+      }
+    })
+  }
+
+  it('should intercept correctly', async () => {
+    const api = createApi()
+    api.addInterceptor('test.should.mock', async (params) => {
+      return {
+        body: {
+          ok: params.query.name === 'alpha'
+        }
+      }
+    })
+
+    await expect(api('test.should.mock').request({ query: { name: 'alpha' } }))
+      .resolves.toHaveProperty('body.ok', true)
+
+    await expect(api('test.should.mock').request({ query: { name: 'beta' } }))
+      .resolves.toHaveProperty('body.ok', false)
+  })
+
+  it('should intercept with correct order', async () => {
+    const api = createApi()
+    api.addInterceptor('test.should.mock', async (params) => {
+      return {
+        body: {
+          ok: params.query.name.startsWith('a')
+        }
+      }
+    })
+
+    api.addInterceptor('test.should.mock', async (params) => {
+      return {
+        body: {
+          ok: params.query.name === 'aux'
+        }
+      }
+    })
+
+    await expect(api('test.should.mock').request({ query: { name: 'alpha' } }))
+      .resolves.toHaveProperty('body.ok', false)
+  })
+
+  it('should intercept with correct order (with transparency)', async () => {
+    const api = createApi()
+    api.addInterceptor('test.should.mock', async (params) => {
+      return {
+        body: {
+          ok: params.query.name.startsWith('a')
+        }
+      }
+    })
+    api.addInterceptor('test.should.mock', async () => null)
+
+    await expect(api('test.should.mock').request({ query: { name: 'alpha' } }))
+      .resolves.toHaveProperty('body.ok', true)
+  })
+
+  it('should not intercept when all interceptors returns null', async () => {
+    const api = createApi()
+    api.addInterceptor('test.should.mock', async () => null)
+    api.addInterceptor('test.should.mock', async () => null)
+    api.addInterceptor('test.should.mock', async () => null)
+
+    await expect(api('test.should.mock').request({ query: { name: 'alpha' } }))
+      .resolves.toHaveProperty('body.ok', false)
+  })
+})

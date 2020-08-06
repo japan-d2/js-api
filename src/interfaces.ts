@@ -43,6 +43,7 @@ export type CastOptions = Partial<{
 export type CallOptions = Partial<{
   validateRequest: JsonSchemaValidateOptions;
   validateResponse: JsonSchemaValidateOptions;
+  interceptors: Interceptor<EndpointSchemaUnknown>[],
 }>
 export type Options = Partial<RequestParameter> & CallOptions & CastOptions
 
@@ -77,6 +78,8 @@ export type Connector = (parameters: RequestParameter) => Promise<ResponseParame
 
 export type EndpointMap = Record<string, EndpointSchemaUnknown>
 
+export type Interceptor <S extends EndpointSchemaUnknown> = (request: Pure<S['request']>) => Promise<Pure<S['response']> | null>
+
 export interface EndpointCallable <T, U, O> {
   validate (parameters: Dirty<SchemaDefinition<T>>): parameters is Pure<SchemaDefinition<T>>;
   assertValid (parameters: Dirty<SchemaDefinition<T>>): asserts parameters is Pure<SchemaDefinition<T>>;
@@ -90,7 +93,7 @@ export interface APICallable <O, E extends EndpointMap = EndpointMap> {
     endpoint: EndpointSchema<T, U>,
   ): EndpointCallable<T, U, O>;
 
-  <K extends keyof E, S extends EndpointSchema<unknown, unknown> = E[K]>(
+  <K extends keyof E, S extends EndpointSchemaUnknown = E[K]>(
     endpoint: K,
   ): EndpointCallable<Pure<S['request']>, Pure<S['response']>, O>;
 
@@ -105,4 +108,9 @@ export interface APICallable <O, E extends EndpointMap = EndpointMap> {
     parameters: CallParameters<Pure<S['request']>, O>,
     callOptions?: CallOptions
   ): Promise<Pure<S['response']>>;
+
+  addInterceptor <K extends keyof E, S extends EndpointSchemaUnknown = E[K]> (
+    endpoint: K,
+    interceptor: Interceptor<S>,
+  ): void;
 }

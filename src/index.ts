@@ -1,5 +1,5 @@
 import { validate, Options as ValidateOptions } from 'jsonschema'
-import { Options, Connector, CallParameters, EndpointSchema, CallOptions, EndpointMap, EndpointCallable, Json, APICallable, EndpointSchemaUnknown } from './interfaces'
+import { Options, Connector, CallParameters, EndpointSchema, CallOptions, EndpointMap, EndpointCallable, Json, APICallable, EndpointSchemaUnknown, Interceptor, ResponseParameter } from './interfaces'
 import { JSONSchema7 } from 'json-schema'
 
 export * from './interfaces'
@@ -55,6 +55,7 @@ export function apiFactory <O extends Options, E extends EndpointMap> (
   endpoints: E,
   connector: Connector
 ): APICallable<O, E> {
+  const interceptors: Record<string, Interceptor<EndpointSchemaUnknown>[]> = {}
   async function call <T, U> (
     endpoint: EndpointSchema<T, U>,
     parameters: CallParameters<T, O>,
@@ -83,7 +84,18 @@ export function apiFactory <O extends Options, E extends EndpointMap> (
       }
     }
 
-    const response = await connector({
+    let interceptResult: ResponseParameter | undefined
+    const interceptors = ([...(options.interceptors ?? [])]).reverse()
+
+    for (const interceptor of interceptors) {
+      const result = await interceptor(parameters)
+      if (result !== null) {
+        interceptResult = result as ResponseParameter
+        break
+      }
+    }
+
+    const response = interceptResult ?? await connector({
       url: endpoint.url,
       method: endpoint.method,
       query,
@@ -91,6 +103,7 @@ export function apiFactory <O extends Options, E extends EndpointMap> (
       body,
       schema: endpoint
     })
+
     if (options.validateResponse) {
       const preprocessor = options.preprocessors?.validation?.response ?? ((parameters) => parameters)
       const result = validate(preprocessor({
@@ -127,11 +140,17 @@ export function apiFactory <O extends Options, E extends EndpointMap> (
           throwError: true
         })
       },
-      call: (parameters: Record<string, unknown>, callOptions = {}): Promise<Record<string, unknown>> => {
-        return call(endpointObject(endpoint), parameters, callOptions)
+      call: (parameters: Record<string, unknown>, callOptions: CallOptions = {}): Promise<Record<string, unknown>> => {
+        return call(endpointObject(endpoint), parameters, {
+          ...callOptions,
+          interceptors: [
+            ...(typeof endpoint === 'string' ? (interceptors[endpoint] ?? []) : []),
+            ...(callOptions?.interceptors ?? [])
+          ]
+        })
       },
       request: (parameters: Record<string, unknown>, callOptions = {}): Promise<Record<string, unknown>> => {
-        return call(endpointObject(endpoint), parameters, callOptions)
+        return methods.call(parameters, callOptions)
       },
       emptyRequestParameters: () => {
         const schema = endpointObject(endpoint).request.toJSONSchema()
@@ -141,7 +160,7 @@ export function apiFactory <O extends Options, E extends EndpointMap> (
     return methods
   }
 
-  return function api (
+  return Object.assign(function api (
     endpoint: string | EndpointSchemaUnknown,
     parameters?: CallParameters<Record<string, unknown>, Record<string, unknown>>,
     callOptions?: Options
@@ -153,5 +172,12 @@ export function apiFactory <O extends Options, E extends EndpointMap> (
     }
 
     return callable
-  }
+  }, {
+    addInterceptor (key: any, interceptor: any): void {
+      if (!interceptors[key]) {
+        interceptors[key] = []
+      }
+      interceptors[key].push(interceptor)
+    }
+  })
 }
