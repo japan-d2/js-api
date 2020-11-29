@@ -170,6 +170,7 @@ describe('apiFactory', () => {
           schema: { type: 'string', pattern: '^hello' },
           instance: 'good morning!',
           name: 'pattern',
+          path: ['query', 'message'],
           argument: '^hello',
           stack: 'instance.query.message does not match pattern "^hello"'
         })
@@ -219,6 +220,7 @@ describe('apiFactory', () => {
           schema: { const: 'application/json' },
           instance: 'application/json+x',
           name: 'const',
+          path: ['headers', 'content-type'],
           argument: 'application/json',
           stack: 'instance.headers.content-type does not exactly match expected constant: application/json'
         })
@@ -400,6 +402,7 @@ describe('apiFactory with endpoints', () => {
           schema: { type: 'string', pattern: '^hello' },
           instance: 'good morning!',
           name: 'pattern',
+          path: ['query', 'message'],
           argument: '^hello',
           stack: 'instance.query.message does not match pattern "^hello"'
         })
@@ -449,6 +452,7 @@ describe('apiFactory with endpoints', () => {
           schema: { const: 'application/json' },
           instance: 'application/json+x',
           name: 'const',
+          path: ['headers', 'content-type'],
           argument: 'application/json',
           stack: 'instance.headers.content-type does not exactly match expected constant: application/json'
         })
@@ -612,6 +616,7 @@ describe('apiFactory with separation call', () => {
           schema: { type: 'string', pattern: '^hello' },
           instance: 'good morning!',
           name: 'pattern',
+          path: ['query', 'message'],
           argument: '^hello',
           stack: 'instance.query.message does not match pattern "^hello"'
         })
@@ -661,6 +666,7 @@ describe('apiFactory with separation call', () => {
           schema: { const: 'application/json' },
           instance: 'application/json+x',
           name: 'const',
+          path: ['headers', 'content-type'],
           argument: 'application/json',
           stack: 'instance.headers.content-type does not exactly match expected constant: application/json'
         })
@@ -826,6 +832,7 @@ describe('apiFactory with endpoints, separation call', () => {
           schema: { type: 'string', pattern: '^hello' },
           instance: 'good morning!',
           name: 'pattern',
+          path: ['query', 'message'],
           argument: '^hello',
           stack: 'instance.query.message does not match pattern "^hello"'
         })
@@ -875,6 +882,7 @@ describe('apiFactory with endpoints, separation call', () => {
           schema: { const: 'application/json' },
           instance: 'application/json+x',
           name: 'const',
+          path: ['headers', 'content-type'],
           argument: 'application/json',
           stack: 'instance.headers.content-type does not exactly match expected constant: application/json'
         })
